@@ -94,17 +94,21 @@ class UniadsObject extends DataObject {
 			$fields->addFieldsToTab('Root.Main', array(
 				DropdownField::create('CampaignID', _t('UniadsObject.has_one_Campaign', 'Campaign'), DataList::create('UniadsCampaign')->map())->setEmptyString(_t('UniadsObject.Campaign_none', 'none')),
 				DropdownField::create('ZoneID', _t('UniadsObject.has_one_Zone', 'Zone'), DataList::create('UniadsZone')->map())->setEmptyString(_t('UniadsObject.Zone_select', 'select one')),
-				new NumericField('Weight', _t('UniadsObject.db_Weight', 'Weight (controls how often it will be shown relative to others)')),
-				new TextField('TargetURL', _t('UniadsObject.db_TargetURL', 'Target URL')),
-				new Treedropdownfield('InternalPageID', _t('UniadsObject.has_one_InternalPage', 'Internal Page Link'), 'Page'),
-				new CheckboxField('NewWindow', _t('UniadsObject.db_NewWindow', 'Open in a new Window')),
-				$file = new UploadField('File', _t('UniadsObject.has_one_File', 'Advertisement File')),
-				$AdContent = new TextareaField('AdContent', _t('UniadsObject.db_AdContent', 'Advertisement Content')),
-				$Starts = new DateField('Starts', _t('UniadsObject.db_Starts', 'Starts')),
-				$Expires = new DateField('Expires', _t('UniadsObject.db_Expires', 'Expires')),
-				new NumericField('ImpressionLimit', _t('UniadsObject.db_ImpressionLimit', 'Impression Limit')),
-				new CheckboxField('Active', _t('UniadsObject.db_Active', 'Active')),
-				new LiteralField('Preview', '<a href="'.$previewLink.'" target="_blank">' . _t('UniadsObject.Preview', 'Preview this advertisement') . "</a>"),
+				NumericField::create('Weight', _t('UniadsObject.db_Weight', 'Weight'))
+					->setDescription(_t('UniadsObject.weight_description', 'Controls how often the ad will be shown relative to others, a value 2 will show twice as often as 1')),
+				TextField::create('TargetURL', _t('UniadsObject.db_TargetURL', 'Target URL'))
+					->setDescription(_t('UniadsObject.TargetURL_Description', 'Optional: An external link that will be loaded when the ad is clicked')),
+				Treedropdownfield::create('InternalPageID', _t('UniadsObject.has_one_InternalPage', 'Internal Page Link'), 'Page')
+					->setDescription(_t('UniadsObject.InternalPageID_Description', 'Optional: An internal link that will be loaded when the ad is clicked')),
+				CheckboxField::create('NewWindow', _t('UniadsObject.db_NewWindow', 'Open in a new Window')),
+				$file = UploadField::create('File', _t('UniadsObject.has_one_File', 'Advertisement File')),
+				$AdContent = TextareaField::create('AdContent', _t('UniadsObject.db_AdContent', 'Advertisement Content'))
+					->setDescription(_t('UniadsObject.AdContent_Description', 'Optional: Use an embed code from AdWords or another ad network instead of a file')),
+				$Starts = DateField::create('Starts', _t('UniadsObject.db_Starts', 'Starts')),
+				$Expires = DateField::create('Expires', _t('UniadsObject.db_Expires', 'Expires')),
+				NumericField::create('ImpressionLimit', _t('UniadsObject.db_ImpressionLimit', 'Impression Limit')),
+				CheckboxField::create('Active', _t('UniadsObject.db_Active', 'Active')),
+				LiteralField::create('Preview', '<a href="'.$previewLink.'" target="_blank">' . _t('UniadsObject.Preview', 'Preview this advertisement') . "</a>"),
 			));
 
 			$app_categories = File::config()->app_categories;
@@ -112,7 +116,7 @@ class UniadsObject extends DataObject {
 			$file->getValidator()->setAllowedMaxFileSize(array('*' => $this->config()->max_file_size));
 			$file->getValidator()->setAllowedExtensions(array_merge($app_categories['image'], $app_categories['flash']));
 
-			$AdContent->setRows(10);
+			$AdContent->setRows(5);
 			$AdContent->setColumns(20);
 
 			$Starts->setConfig('showcalendar', true);
@@ -123,6 +127,14 @@ class UniadsObject extends DataObject {
 			$Expires->setConfig('dateformat', i18n::get_date_format());
 			$Expires->setConfig('datavalueformat', 'yyyy-MM-dd');
 			$Expires->setConfig('min', date('Y-m-d', strtotime($this->Starts ? $this->Starts : '+1 days')));
+		}
+
+		if ($this->owner->isInDB() == false) {
+			// Description for title before save
+			$fields->dataFieldByName('Title')->setDescription(_t('UniadsObject.Title_before_save', 'Add a title and save the ad before adding an image'));
+		} else {
+			// Description for title after save
+			$fields->dataFieldByName('Title')->setDescription(_t('UniadsObject.Title_after_save', 'This name is used to identify the ad in the list view'));
 		}
 
 		$this->extend('updateCMSFields', $fields);
@@ -224,5 +236,23 @@ class UniadsObject extends DataObject {
 			$imp->write();
 		}
 		return $ad;
+	}
+
+	// Permissions
+	// -----------
+	public function canView($member = null) {
+		return Permission::check('CMS_ACCESS_UniadsAdmin', 'any', $member);
+	}
+
+	public function canEdit($member = null) {
+		return Permission::check('CMS_ACCESS_UniadsAdmin', 'any', $member);
+	}
+
+	public function canDelete($member = null) {
+		return Permission::check('CMS_ACCESS_UniadsAdmin', 'any', $member);
+	}
+
+	public function canCreate($member = null) {
+		return Permission::check('CMS_ACCESS_UniadsAdmin', 'any', $member);
 	}
 }

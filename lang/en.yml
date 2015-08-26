@@ -1,57 +1,50 @@
 en:
   UniadsAdmin:
-    MENUTITLE: 'Ads'
-
+    MENUTITLE: Ads
+  SiteTree:
+    TABMAIN: Main
+  UniadsCampaign:
+    PLURALNAME: 'Uniads Campaigns'
+    SINGULARNAME: 'Uniads Campaign'
+  UniadsClick:
+    PLURALNAME: 'Uniads Clicks'
+    SINGULARNAME: 'Uniads Click'
+  UniadsClient:
+    PLURALNAME: 'Uniads Clients'
+    SINGULARNAME: 'Uniads Client'
+  UniadsImpression:
+    PLURALNAME: 'Uniads Impressions'
+    SINGULARNAME: 'Uniads Impression'
   UniadsObject:
-    SINGULARNAME: 'Advertisement'
-    PLURALNAME: 'Advertisements'
-    db_Title: 'Title'
-    db_Starts: 'Starts'
-    db_Expires: 'Expires'
-    db_Active: 'Active'
-    db_TargetURL: 'Target URL'
-    db_NewWindow: 'Open in a new Window'
-    db_AdContent: 'Advertisement Content'
-    db_ImpressionLimit: 'Impression Limit'
-    db_Weight: 'Weight (controls how often it will be shown relative to others)'
-    db_Impressions: 'Impressions'
-    db_Clicks: 'Clicks'
-    has_one_File: 'Advertisement File'
-    has_one_Zone: 'Zone'
-    has_one_Campaign: 'Campaign'
-    has_one_InternalPage: 'Internal Page Link'
-    Campaign_none: 'none'
-    Zone_select: 'select one'
+    Campaign_none: none
+    InheritSettings: 'Inherit parent settings'
+    InternalPageID_Description: 'Optional: An internal link that will be loaded when the ad is clicked'
+    PLURALNAME: Advertisements
     Preview: 'Preview this advertisement'
     PreviewTitle: 'Ad Preview:'
-    InheritSettings: 'Inherit parent settings'
+    SINGULARNAME: 'Uniads Object'
+    TargetURL_Description: 'Optional: An external link that will be loaded when the ad is clicked'
+    Title_after_save: 'This name is used to identify the ad in the list view'
+    Title_before_save: 'Add a title and save the ad before adding an image'
     UseCampaign: 'Use Campaign'
-    ClicksNotApplicable: 'Not Applicable (external advertisement)'
-
+    Zone_select: 'select one'
+    db_Active: Active
+    db_AdContent: 'Advertisement Content'
+    db_Clicks: Clicks
+    db_Expires: Expires
+    db_ImpressionLimit: 'Impression Limit'
+    db_Impressions: Impressions
+    db_NewWindow: 'Open in a new Window'
+    db_Starts: Starts
+    db_TargetURL: 'Target URL'
+    db_Title: Title
+    db_Weight: Weight
+    has_one_Campaign: Campaign
+    has_one_File: 'Advertisement File'
+    has_one_InternalPage: 'Internal Page Link'
+    has_one_Zone: Zone
+    weight_description: 'Controls how often the ad will be shown relative to others, a value 2 will show twice as often as 1'
   UniadsZone:
-    SINGULARNAME: 'Ad Zone'
-    PLURALNAME: 'Ad Zones'
-    db_Title: 'Title'
-    db_ZoneWidth: 'Zone Width'
-    db_ZoneHeight: 'Zone Height'
-    db_Order: 'Order'
-    db_Active: 'Active'
+    PLURALNAME: 'Uniads Zones'
+    SINGULARNAME: 'Uniads Zone'
     has_one_ParentZone: 'Parent Zone'
-    has_many_Ads: 'Advertisements'
-    has_many_ChildZones: 'Child Zones'
-
-  UniadsCampaign:
-    SINGULARNAME: 'Campaign'
-    PLURALNAME: 'Campaigns'
-    db_Title: 'Title'
-    db_Starts: 'Starts'
-    db_Expires: 'Expires'
-    db_Active: 'Active'
-    has_one_Client: 'Client'
-    has_many_Ads: 'Advertisements'
-
-  UniadsClient:
-    SINGULARNAME: 'Client'
-    PLURALNAME: 'Clients'
-    db_Title: 'Title'
-    db_ContactEmail: 'Contact Email'
