@@ -31,16 +31,7 @@ class UniadsController extends Controller {
 		if ($id) {
 			$ad = UniadsObject::get()->byID($id);
 			if ($ad && $ad->exists()) {
-				$conf = UniadsObject::config();
-				if ($conf->record_clicks) {
-					$ad->Clicks++;
-					$ad->write();
-				}
-				if ($conf->record_clicks_stats) {
-					$clk = new UniadsClick;
-					$clk->AdID = $ad->ID;
-					$clk->write();
-				}
+				$ad->increaseClicks();
 				return $ad;
 			}
 		}

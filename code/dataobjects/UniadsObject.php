@@ -226,16 +226,49 @@ class UniadsObject extends DataObject {
 	 */
 	public function increaseImpressions(){
 		$ad = clone($this);
-		if ($this->stat('record_impressions')) {
+		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_impressions')) {
 			$ad->Impressions++;
 			$ad->write();
 		}
-		if ($this->stat('record_impressions_stats')) {
+		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_impressions_stats')) {
 			$imp = new UniadsImpression;
 			$imp->AdID = $ad->ID;
 			$imp->write();
 		}
 		return $ad;
+	}
+
+	/**
+	 * Increases the clicks counter if 'record_clicks' setting is true
+	 * Creates a new UniadsClickentry in DB if 'record_click_stats' is true
+	 * @return UniadsObject
+	 */
+	public function increaseClicks(){
+		$ad = clone($this);
+		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_clicks')) {
+			$ad->Clicks++;
+			$ad->write();
+		}
+		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_clicks_stats')) {
+			$clk = new UniadsClick;
+			$clk->AdID = $ad->ID;
+			$clk->write();
+		}
+		return $ad;
+	}
+
+	/**
+	 * Check to see if member should increase impressions so that admins cannot effect
+	 * advertising statistics.
+	 * todo: add the ability to set the permission level to check from admin
+	 * @return bool
+     */
+	private function memberShouldIncreaseImpressions()
+	{
+		if (Permission::check("VIEW_DRAFT_CONTENT")) {
+		    return false;
+		}
+		return true;
 	}
 
 	// Permissions
