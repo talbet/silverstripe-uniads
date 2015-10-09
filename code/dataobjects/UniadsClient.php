@@ -19,4 +19,7 @@ class UniadsClient extends DataObject {
 		'ContactEmail',
 	);
 
+    private static $singular_name = "Client";
+    private static $plural_name = "Clients";
+
 }

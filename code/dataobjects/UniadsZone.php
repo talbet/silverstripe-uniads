@@ -41,6 +41,9 @@ class UniadsZone extends DataObject {
 		'Active' => 1,
 	);
 
+    private static $singular_name = "Zone";
+    private static $plural_name = "Zones";
+
 	private static $default_records = array(
 		array('Title' => 'Top', 'ZoneWidth' => '500', 'ZoneHeight' => '90'),
 		array('Title' => 'Right', 'ZoneWidth' => '160', 'ZoneHeight' => '600'),

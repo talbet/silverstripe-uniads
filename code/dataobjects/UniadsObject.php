@@ -59,11 +59,14 @@ class UniadsObject extends DataObject {
 		'Title',
 	);
 	private static $summary_fields = array(
-		'Title',
-		'Campaign.Title',
-		'Zone.Title',
-		'Impressions',
-		'Clicks',
+		'showActive' => 'Active',
+		'Title' => 'Title',
+		'showCampaignAndCampaignStatus' => 'Campaign',
+		'Zone.Title' => 'Zone',
+		'Impressions' => 'Impressions',
+		'Clicks' => 'Clicks',
+		'showAdInPages' => 'Location',
+		'Weight' => 'Weight',
 	);
 
 
@@ -287,5 +290,53 @@ class UniadsObject extends DataObject {
 
 	public function canCreate($member = null) {
 		return Permission::check('CMS_ACCESS_UniadsAdmin', 'any', $member);
+	}
+
+	// Summary Field Functions
+	// -----------------------
+
+	/**
+	 * Summary field function that returns an HTML check mark if this ad is active
+	 * @return literalField
+	 */
+	public function showActive()
+	{
+		if ($this->Active == 1) {
+			return literalField::create('check', '<span style="display:block; text-align:center; color:#1F9433">&check;</span>');
+		}
+	}
+
+	/**
+	 * Summary field function that returns the name of the linked campaign and extra text
+	 * to warn if the campaign is inactive
+	 * @return literalField
+	 */
+	public function showCampaignAndCampaignStatus()
+	{
+		$campaignName =  $this->Campaign()->Title;
+		if ($this->Campaign()->exists() && $this->Campaign()->Active == 0) {
+			return literalField::create('campaign', $campaignName . ' <span style="color:red">Inactive</span>');
+		}
+
+		return literalField::create('campaign', $campaignName);
+	}
+
+
+	/**
+	 * Summary field function that returns a string listing all the locations the ad is attached to
+	 * or 'global' if the ad will show everywhere
+	 * @return string
+	 */
+	public function showAdInPages()
+	{
+		if (0 == $this->AdInPages()->count()) {
+			return 'Global';
+		}
+
+		$ret = array();
+		foreach ($this->AdInPages() as $page) {
+			$ret[$page->ID] = $page->Title;
+		}
+		return implode(", ", $ret);
 	}
 }
