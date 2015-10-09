@@ -18,11 +18,13 @@ class UniadsObject extends DataObject {
 
 	private static $files_dir = 'UploadedAds';
 	private static $max_file_size = 2097152;
+	private static $singular_name = "Advert";
+	private static $plural_name = "Adverts";
 
 	private static $db = array(
 		'Title' => 'Varchar',
-		'Starts' => 'Date',
-		'Expires' => 'Date',
+		'Starts' => 'Datetime',
+		'Expires' => 'Datetime',
 		'Active' => 'Boolean',
 		'TargetURL' => 'Varchar(255)',
 		'NewWindow' => 'Boolean',
@@ -31,6 +33,9 @@ class UniadsObject extends DataObject {
 		'Weight' => 'Double',
 		'Impressions' => 'Int',
 		'Clicks' => 'Int',
+		'LocationType' => 'Enum("global,selectable","global")',
+		'LinkType' => 'Enum("internal,external","external")',
+		'DisplayType' => 'Enum("file,code","file")',
 	);
 
 	private static $has_one = array(
@@ -84,64 +89,93 @@ class UniadsObject extends DataObject {
 
 	public function getCMSFields() {
 		$fields = new FieldList();
-		$fields->push(new TabSet('Root', new Tab('Main', _t('SiteTree.TABMAIN', 'Main')
-			, new TextField('Title', _t('UniadsObject.db_Title', 'Title'))
-		)));
+		$fields->push(TabSet::create('Root', Tab::create('Main', _t('SiteTree.TABMAIN', 'Main'))));
+		$previewLink = Director::absoluteBaseURL() . 'admin/' . UniadsAdmin::config()->url_segment . '/UniadsObject/preview/' . $this->ID;
 
-		if ($this->ID) {
-			$previewLink = Director::absoluteBaseURL() . 'admin/' . UniadsAdmin::config()->url_segment . '/UniadsObject/preview/' . $this->ID;
+		$fields->addFieldsToTab('Root.Main', array(
+			TextField::create('Title', _t('UniadsObject.db_Title', 'Title'))
+				->setDescription(_t('UniadsObject.Title_after_save', 'This name is used to identify the ad in the list view')),
+			DropdownField::create('CampaignID', _t('UniadsObject.has_one_Campaign', 'Campaign'), DataList::create('UniadsCampaign')->map())->setEmptyString(_t('UniadsObject.Campaign_none', 'none'))
+				->setDescription(_t('UniadsObject.CampaignID_Description', 'Setting a campaign helps to group ads together')),
+			DropdownField::create('ZoneID', _t('UniadsObject.has_one_Zone', 'Zone'), DataList::create('UniadsZone')->map())->setEmptyString(_t('UniadsObject.Zone_select', 'select one'))
+				->setDescription(_t('UniadsObject.ZoneID_Description', 'An ads zone controls where on a page it can be displayed')),
+			CheckboxField::create('Active', _t('UniadsObject.db_Active', 'Active')),
 
-			$fields->addFieldToTab('Root.Main', new ReadonlyField('Impressions', _t('UniadsObject.db_Impressions', 'Impressions')), 'Title');
-			$fields->addFieldToTab('Root.Main', new ReadonlyField('Clicks', _t('UniadsObject.db_Clicks', 'Clicks')), 'Title');
+			HeaderField::create('LocationHeader', 'Location'),
+			OptionSetField::create("LocationType", "Location Type", array('global' => 'Display ad globally', 'selectable' => 'Choose locations to display ad'), 'global'),
+			$locations = DisplayLogicWrapper::create(TreeMultiselectField::create('AdInPages', _t('UniadsObject.belongs_many_many_AdInPages', 'Locations'), 'SiteTree')
+				->setDescription(_t('UniadsObject.AdInPages_Description', 'Select the locations this ad can be viewed, The ad will also show up on sub-pages'))),
 
-			$fields->addFieldsToTab('Root.Main', array(
-				DropdownField::create('CampaignID', _t('UniadsObject.has_one_Campaign', 'Campaign'), DataList::create('UniadsCampaign')->map())->setEmptyString(_t('UniadsObject.Campaign_none', 'none')),
-				DropdownField::create('ZoneID', _t('UniadsObject.has_one_Zone', 'Zone'), DataList::create('UniadsZone')->map())->setEmptyString(_t('UniadsObject.Zone_select', 'select one')),
-				NumericField::create('Weight', _t('UniadsObject.db_Weight', 'Weight'))
-					->setDescription(_t('UniadsObject.weight_description', 'Controls how often the ad will be shown relative to others, a value 2 will show twice as often as 1')),
-				TextField::create('TargetURL', _t('UniadsObject.db_TargetURL', 'Target URL'))
-					->setDescription(_t('UniadsObject.TargetURL_Description', 'Optional: An external link that will be loaded when the ad is clicked')),
-				Treedropdownfield::create('InternalPageID', _t('UniadsObject.has_one_InternalPage', 'Internal Page Link'), 'Page')
-					->setDescription(_t('UniadsObject.InternalPageID_Description', 'Optional: An internal link that will be loaded when the ad is clicked')),
-				CheckboxField::create('NewWindow', _t('UniadsObject.db_NewWindow', 'Open in a new Window')),
-				$file = UploadField::create('File', _t('UniadsObject.has_one_File', 'Advertisement File')),
-				$AdContent = TextareaField::create('AdContent', _t('UniadsObject.db_AdContent', 'Advertisement Content'))
-					->setDescription(_t('UniadsObject.AdContent_Description', 'Optional: Use an embed code from AdWords or another ad network instead of a file')),
-				$Starts = DateField::create('Starts', _t('UniadsObject.db_Starts', 'Starts')),
-				$Expires = DateField::create('Expires', _t('UniadsObject.db_Expires', 'Expires')),
-				NumericField::create('ImpressionLimit', _t('UniadsObject.db_ImpressionLimit', 'Impression Limit')),
-				CheckboxField::create('Active', _t('UniadsObject.db_Active', 'Active')),
-				LiteralField::create('Preview', '<a href="'.$previewLink.'" target="_blank">' . _t('UniadsObject.Preview', 'Preview this advertisement') . "</a>"),
-			));
+			HeaderField::create('LinkHeader', _t('UniadsObject.Link_header', 'Link')),
+			OptionSetField::create("LinkType", "Link Type", array('external' => 'Link to an external website', 'internal' => 'Link to an internal page'), 'external'),
+			$external = TextField::create('TargetURL', _t('UniadsObject.db_TargetURL', 'Target URL')),
+			$internalWrapper = DisplayLogicWrapper::create($internal = OptionalTreedropdownfield::create('InternalPageID', _t('UniadsObject.has_one_InternalPage', 'Internal Page Link'), 'SiteTree')->setEmptyString('No page')),
+			$newWindow = CheckboxField::create('NewWindow', _t('UniadsObject.db_NewWindow', 'Open link in a new Window')),
 
-			$app_categories = File::config()->app_categories;
-			$file->setFolderName($this->config()->files_dir);
-			$file->getValidator()->setAllowedMaxFileSize(array('*' => $this->config()->max_file_size));
-			$file->getValidator()->setAllowedExtensions(array_merge($app_categories['image'], $app_categories['flash']));
 
-			$AdContent->setRows(5);
-			$AdContent->setColumns(20);
+			HeaderField::create('ContentHeader', _t('UniadsObject.Content_header', 'Content')),
+			LiteralField::create('DisplayDescription', _t('UniadsObject.Display_Description', '<p>This section describes the content of the advert</p>')),
+			OptionSetField::create("DisplayType", "Display Type", array('file' => 'Display an image', 'code' => 'Use an embed code'), 'file'),
+			$fileWrapper = DisplayLogicWrapper::create($file = UploadField::create('File', _t('UniadsObject.has_one_File', 'Advertisement File'))),
+			$AdContent = TextareaField::create('AdContent', _t('UniadsObject.db_AdContent', 'Advertisement Content'))
+				->setDescription(_t('UniadsObject.AdContent_Description', 'This field can be used with embed code from AdWords or another ad network instead of a file')),
 
-			$Starts->setConfig('showcalendar', true);
-			$Starts->setConfig('dateformat', i18n::get_date_format());
-			$Starts->setConfig('datavalueformat', 'yyyy-MM-dd');
+			HeaderField::create('ExpiryHeader', 'Expiry', 3),
+			$Starts = DatetimeField::create('Starts', _t('UniadsObject.db_Starts', 'Starts')),
+			$Expires = DatetimeField::create('Expires', _t('UniadsObject.db_Expires', 'Expires')),
+			NumericField::create('ImpressionLimit', _t('UniadsObject.db_ImpressionLimit', 'Impression Limit')),
+			NumericField::create('Weight', _t('UniadsObject.db_Weight', 'Weight'))
+				->setDescription(_t('UniadsObject.weight_description', 'Controls how often the ad will be shown relative to others, a value 2 will show twice as often as 1')),
 
-			$Expires->setConfig('showcalendar', true);
-			$Expires->setConfig('dateformat', i18n::get_date_format());
-			$Expires->setConfig('datavalueformat', 'yyyy-MM-dd');
-			$Expires->setConfig('min', date('Y-m-d', strtotime($this->Starts ? $this->Starts : '+1 days')));
-		}
+			HeaderField::create('statsHeader', _t('UniadsObject.stats_header', 'Stats')),
+			ReadonlyField::create('Impressions', _t('UniadsObject.db_Impressions', 'Impressions'))
+				->addExtraClass('small'),
+			ReadonlyField::create('Clicks', _t('UniadsObject.db_Clicks', 'Clicks'))
+				->addExtraClass('small'),
+			LiteralField::create('Preview', '<a href="' . $previewLink . '" target="_blank">' . _t('UniadsObject.Preview', 'Preview this advertisement') . "</a>"),
+		));
 
-		if ($this->owner->isInDB() == false) {
-			// Description for title before save
-			$fields->dataFieldByName('Title')->setDescription(_t('UniadsObject.Title_before_save', 'Add a title and save the ad before adding an image'));
-		} else {
-			// Description for title after save
-			$fields->dataFieldByName('Title')->setDescription(_t('UniadsObject.Title_after_save', 'This name is used to identify the ad in the list view'));
-		}
+		$app_categories = File::config()->app_categories;
+		$file->setFolderName($this->config()->files_dir);
+		$file->getValidator()->setAllowedMaxFileSize(array('*' => $this->config()->max_file_size));
+		$file->getValidator()->setAllowedExtensions(array_merge($app_categories['image'], $app_categories['flash']));
+
+		/* Display logic */
+		$locations->displayIf("LocationType")->isEqualTo("selectable");
+		$external->displayIf("LinkType")->isEqualTo("external");
+		$internalWrapper->displayIf("LinkType")->isEqualTo("internal");
+		$newWindow->displayIf("LinkType")->isEqualTo("internal")->orIf("LinkType")->isEqualTo("external");
+		$fileWrapper->displayIf("DisplayType")->isEqualTo("file");
+		$AdContent->displayIf("DisplayType")->isEqualTo("code");
+
+		$AdContent->setRows(5);
+		$AdContent->setColumns(20);
+
+		$Starts->getDateField()->setConfig('showcalendar', true);
+		$Starts->getDateField()->setConfig('dateformat', i18n::get_date_format());
+		$Starts->getDateField()->setConfig('datavalueformat', 'yyyy-MM-dd');
+		$Starts->setTimeField(TimePickerField::create('Starts[time]', '')->addExtraClass('fieldgroup-field'));
+		$Starts->getTimeField()->setConfig('timeformat', 'HH:mm');
+
+		$Expires->getDateField()->setConfig('showcalendar', true);
+		$Expires->getDateField()->setConfig('dateformat', i18n::get_date_format());
+		$Expires->getDateField()->setConfig('datavalueformat', 'yyyy-MM-dd');
+		$Expires->getDateField()->setConfig('min', date('Y-m-d', strtotime($this->Starts ? $this->Starts : '+1 days')));
+		$Expires->setTimeField(TimePickerField::create('Expires[time]', '')->addExtraClass('fieldgroup-field'));
+		$Expires->getTimeField()->setConfig('timeformat', 'HH:mm');
 
 		$this->extend('updateCMSFields', $fields);
 		return $fields;
+	}
+
+	public function onBeforeWrite()
+	{
+		// Remove this ad from all pages if global has been selected
+		if ($this->LocationType == 'global') {
+			$this->AdInPages()->removeAll();
+		}
+
+		parent::onBeforeWrite();
 	}
 
 

@@ -10,37 +10,19 @@
  */
 class UniadsExtension extends DataExtension {
 
-	private static $db = array(
-		'InheritSettings' => 'Boolean',
-	);
-	private static $defaults = array(
-		'InheritSettings' => true
-	);
 	private static $many_many = array(
 		'Ads' => 'UniadsObject',
 	);
-	private static $has_one = array(
-		'UseCampaign' => 'UniadsCampaign',
-	);
-
-	private function getListboxOptions($o) {
-		$list = new DataList($o);
-		return array('' => '') + $list->map()->toArray();
-	}
 
 	public function updateCMSFields(FieldList $fields) {
 		parent::updateCMSFields($fields);
 
 		$fields->findOrMakeTab('Root.Advertisements', _t('UniadsObject.PLURALNAME', 'Advertisements'));
-		$fields->addFieldToTab('Root.Advertisements', new CheckboxField('InheritSettings', _t('UniadsObject.InheritSettings', 'Inherit parent settings')));
 
-		if (!$this->owner->InheritSettings) {
-			$conf = GridFieldConfig_RelationEditor::create();
-			$conf->getComponentByType('GridFieldAddExistingAutocompleter')->setSearchFields(array('Title'));
-			$grid = new GridField("Advertisements", _t('UniadsObject.PLURALNAME', 'Advertisements'), $this->owner->Ads(), $conf);
-			$fields->addFieldToTab("Root.Advertisements", $grid);
-			$fields->addFieldToTab('Root.Advertisements', new DropdownField('UseCampaignID', _t('UniadsObject.UseCampaign', 'Use Campaign'), $this->getListboxOptions('UniadsCampaign')));
-		}
+		$conf = GridFieldConfig_RelationEditor::create();
+		$conf->getComponentByType('GridFieldAddExistingAutocompleter')->setSearchFields(array('Title'));
+		$grid = new GridField("Advertisements", _t('UniadsObject.PLURALNAME', 'Advertisements'), $this->owner->Ads(), $conf);
+		$fields->addFieldToTab("Root.Advertisements", $grid);
 	}
 
 	/** Displays a randomly chosen advertisement of the specified dimensions.
@@ -94,28 +76,26 @@ class UniadsExtension extends DataExtension {
 
 	}
 
-	/**
-	 * Scans over the owning page and all parent pages until it finds the one with the settings for displaying ads
-	 * @return null|Page
-	 */
-	public function getPageWithSettingsForAds()
-	{
-		$settingsPage = $this->owner;
-		if ($settingsPage->InheritSettings) {
-			while ($settingsPage->ParentID) {
-				if (!$settingsPage->InheritSettings) {
-					break;
-				}
-				$settingsPage = $settingsPage->Parent();
-			}
-			if (!$settingsPage->ParentID && $settingsPage->InheritSettings) {
-				$settingsPage = null;
-				return $settingsPage;
-			}
-			return $settingsPage;
-		}
-		return $settingsPage;
-	}
+    /**
+     * Scans over the owning page and all parent pages until it finds the one with ads assigned
+     * @return null|Page
+     */
+    public function getPageWithAdsInZone(UniadsZone $zone)
+    {
+        $page = $this->owner;
+        if ($page->Ads()->exists()) {
+            return $page;
+        }
+
+        while ($page->ParentID) {
+            $page = $page->Parent();
+            if ($page->Ads()->exists()) {
+                return $page;
+            }
+        }
+
+        return null;
+    }
 
 	/**
 	 * @param $zone
@@ -123,35 +103,26 @@ class UniadsExtension extends DataExtension {
 	 */
 	public function getBasicFilteredAdListByZone(UniadsZone $zone)
 	{
-		$adsSettingsPage = $this->getPageWithSettingsForAds();
 
-		$UniadsObject = UniadsObject::get()->filter(
-			array(
-				'ZoneID' => $zone->ID,
-				'Active' => 1
-			)
-		);
+        $UniadsObject = UniadsObject::get()->filter(
+            array(
+                'ZoneID' => $zone->ID,
+                'Active' => 1,
+                'AdInPages.ID' => $this->getPageIDsWithAncestors(),
+            )
+        );
 
-
-
-		//page specific ads, use only them
-		if ($adsSettingsPage) {
-			$UniadsObject = $UniadsObject->where(
-				"(
-						exists (select * from Page_Ads pa where pa.UniadsObjectID = UniadsObject.ID and pa.PageID = " . $adsSettingsPage->ID . ")
-						or not exists (select * from Page_Ads pa where pa.UniadsObjectID = UniadsObject.ID)
-					)"
-			);
-			if ($adsSettingsPage->UseCampaignID) {
-				$UniadsObject = $UniadsObject->addFilter(array('CampaignID' => $adsSettingsPage->UseCampaignID));
-			}
-		} else {
-			//filter for Ads not exclusively associated with a page
-			//how to convert this to ORM filter?
-			$UniadsObject = $UniadsObject->where(
-				'not exists (select * from Page_Ads pa where pa.UniadsObjectID = UniadsObject.ID)'
-			);
-		}
+        // Fall back on global ads if there is nothing in the hierarchy
+        if (!$UniadsObject->exists()) {
+            $UniadsObject = UniadsObject::get()->filter(
+                array(
+                    'ZoneID' => $zone->ID,
+                    'Active' => 1,
+                )
+            );
+            // Remove all ads that are assigned to a page exclusively
+            $UniadsObject = $UniadsObject->subtract(UniadsObject::get()->filter('AdInPages.ID:GreaterThan', 0));
+        }
 
 		$UniadsObject = $UniadsObject->leftJoin('UniadsCampaign', 'c.ID = UniadsObject.CampaignID', 'c');
 
@@ -215,6 +186,16 @@ class UniadsExtension extends DataExtension {
 
 		return $weight;
 	}
+
+    /**
+     * Returns an array of page ids for the current page and all parents
+     * @return array
+     */
+    private function getPageIDsWithAncestors()
+    {
+        $page = $this->owner;
+        return array_merge(array($page->ID), $page->getAncestors()->column('ID'));
+    }
 
 
 }

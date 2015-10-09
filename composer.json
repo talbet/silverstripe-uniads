@@ -8,7 +8,10 @@
 		"email": "elvinas@unisolutions.eu"
 	}],
 	"require": {
-		"silverstripe/cms": "3.*"
+		"silverstripe/cms": "3.*",
+        "unclecheese/display-logic": "dev-master",
+        "silverstripe/timepickerfield": "^1.0@dev",
+        "richardsjoqvist/silverstripe-optionaltreedropdownfield": "dev-master",
 	},
 	"minimum-stability": "dev",
 	"extra": {
