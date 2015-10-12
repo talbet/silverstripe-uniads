@@ -85,6 +85,29 @@ class UniadsExtension extends DataExtension {
 	}
 
     /**
+	 * Scans over the owning page and all parent pages until it finds the one with the settings for displaying ads
+	 * @return null|Page
+	 */
+	public function getPageWithSettingsForAds()
+	{
+		$settingsPage = $this->owner;
+		if ($settingsPage->InheritSettings) {
+			while ($settingsPage->ParentID) {
+				if (!$settingsPage->InheritSettings) {
+					break;
+				}
+				$settingsPage = $settingsPage->Parent();
+			}
+			if (!$settingsPage->ParentID && $settingsPage->InheritSettings) {
+				$settingsPage = null;
+				return $settingsPage;
+			}
+			return $settingsPage;
+		}
+		return $settingsPage;
+	}
+
+    /**
      * Scans over the owning page and all parent pages until it finds the one with ads assigned
      * @return null|Page
      */

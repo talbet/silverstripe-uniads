@@ -114,7 +114,6 @@ class UniadsObject extends DataObject {
 
 
 			HeaderField::create('ContentHeader', _t('UniadsObject.Content_header', 'Content')),
-			LiteralField::create('DisplayDescription', _t('UniadsObject.Display_Description', '<p>This section describes the content of the advert</p>')),
 			OptionSetField::create("DisplayType", "Display Type", array('file' => 'Display an image', 'code' => 'Use an embed code'), 'file'),
 			$fileWrapper = DisplayLogicWrapper::create($file = UploadField::create('File', _t('UniadsObject.has_one_File', 'Advertisement File'))),
 			$AdContent = TextareaField::create('AdContent', _t('UniadsObject.db_AdContent', 'Advertisement Content'))
@@ -263,11 +262,11 @@ class UniadsObject extends DataObject {
 	 */
 	public function increaseImpressions(){
 		$ad = clone($this);
-		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_impressions')) {
+		if ($this->memberShouldIncreaseImpressions(Member::currentUser()) && $this->stat('record_impressions')) {
 			$ad->Impressions++;
 			$ad->write();
 		}
-		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_impressions_stats')) {
+		if ($this->memberShouldIncreaseImpressions(Member::currentUser()) && $this->stat('record_impressions_stats')) {
 			$imp = new UniadsImpression;
 			$imp->AdID = $ad->ID;
 			$imp->write();
@@ -282,11 +281,11 @@ class UniadsObject extends DataObject {
 	 */
 	public function increaseClicks(){
 		$ad = clone($this);
-		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_clicks')) {
+		if ($this->memberShouldIncreaseImpressions(Member::currentUser()) && $this->stat('record_clicks')) {
 			$ad->Clicks++;
 			$ad->write();
 		}
-		if ($this->memberShouldIncreaseImpressions() && $this->stat('record_clicks_stats')) {
+		if ($this->memberShouldIncreaseImpressions(Member::currentUser()) && $this->stat('record_clicks_stats')) {
 			$clk = new UniadsClick;
 			$clk->AdID = $ad->ID;
 			$clk->write();
@@ -300,9 +299,9 @@ class UniadsObject extends DataObject {
 	 * todo: add the ability to set the permission level to check from admin
 	 * @return bool
      */
-	private function memberShouldIncreaseImpressions()
+	private function memberShouldIncreaseImpressions($member)
 	{
-		if (Permission::check("VIEW_DRAFT_CONTENT")) {
+		if (Permission::checkMember($member, "VIEW_DRAFT_CONTENT")) {
 		    return false;
 		}
 		return true;
