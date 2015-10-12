@@ -11,7 +11,7 @@
 		"silverstripe/cms": "3.*",
         "unclecheese/display-logic": "dev-master",
         "silverstripe/timepickerfield": "^1.0@dev",
-        "richardsjoqvist/silverstripe-optionaltreedropdownfield": "dev-master",
+        "richardsjoqvist/silverstripe-optionaltreedropdownfield": "dev-master"
 	},
 	"minimum-stability": "dev",
 	"extra": {
