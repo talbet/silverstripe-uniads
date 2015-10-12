@@ -53,24 +53,29 @@ UniadsObject:
     AdInPages: =>Page.exclusive
     Zone: =>UniadsZone.active-zone
     Weight: 6
+    AdContent: 'ad exclusive'
   default:
     Active: 1
     Zone: =>UniadsZone.active-zone
     Campaign: =>UniadsCampaign.active-campaign
     Weight: 1
+    AdContent: 'ad default'
   default2:
     Active: 1
     Zone: =>UniadsZone.active-zone
     Weight: 4
+    AdContent: 'ad default 2'
   default3:
     Active: 1
     Zone: =>UniadsZone.active-zone
     Campaign: =>UniadsCampaign.active-campaign2
     Weight: 4
+    AdContent: 'ad default 3'
   subzone-ad:
     Active: 1
     Zone: =>UniadsZone.active-subzone
     Weight: 9
+    AdContent: 'ad in a subzone'
   with-impressionlimit:
     Active: 1
     Zone: =>UniadsZone.active-zone
@@ -78,6 +83,7 @@ UniadsObject:
     ImpressionLimit: 10
     Impressions: 8
     Weight: 4
+    AdContent: 'ad with impressionlimit'
   current:
     Active: 1
     Starts: 2015-01-01
@@ -85,6 +91,7 @@ UniadsObject:
     Zone: =>UniadsZone.active-zone
     Campaign: =>UniadsCampaign.active-campaign2
     Weight: 4
+    AdContent: 'ad current'
   old:
     Active: 1
     Starts: 2015-01-01

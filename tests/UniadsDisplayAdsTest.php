@@ -28,8 +28,6 @@ class UniadsDisplayAdsTest extends SapphireTest {
 
 		$childSettingPage = $childPage->getPageWithSettingsForAds(); //should return Page#1
 		$this->assertEquals(1, $childSettingPage->ID);
-
-
 	}
 
 	/**
@@ -113,4 +111,31 @@ class UniadsDisplayAdsTest extends SapphireTest {
 			'The number of UniadsImpressions should increase by one the counter if record_impressions_stats is set to true');
 	}
 
+	public function testAdFilterForDuplicateAds() {
+		Config::inst()->update('UniadsObject', 'filter_double_ads', true);
+		$page = $this->objFromFixture('Page', 'using-zone');
+		$zone = $this->objFromFixture('UniadsZone', 'active-zone');
+
+		$cnt = $page->getAdsByZone($zone)->count();
+		$this->assertEquals(5, $cnt, 'we should have fife ads in this zone');
+
+		//get all Ads by zone
+		$ads[1] = $page->DisplayAd($zone);
+		$ads[2] = $page->DisplayAd($zone);
+		$ads[3] = $page->DisplayAd($zone);
+		$ads[4] = $page->DisplayAd($zone);
+		$ads[5] = $page->DisplayAd($zone);
+
+		$emptyAd = $page->DisplayAd($zone);
+
+		foreach ($ads as $k => $ad) {
+			foreach ($ads as $k2 => $comparedAd) {
+				if ($k2 !== $k) {
+					$this->assertNotSame($ad, $comparedAd, 'ads must not be equal');
+				}
+			}
+		}
+
+		$this->assertEmpty($emptyAd, 'there should be no sixth add shown as there are just two ads...');
+	}
 }
