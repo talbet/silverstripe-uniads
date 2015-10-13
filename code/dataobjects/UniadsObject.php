@@ -61,7 +61,11 @@ class UniadsObject extends DataObject {
 		'Weight' => 1.0,
 	);
 	private static $searchable_fields = array(
-		'Title',
+		'Active' => array('title'=> 'Active'),
+		'Title' => array('title'=> 'Title'),
+		'CampaignID' => array('title'=> 'Campaign'),
+		'ZoneID' => array('title'=> 'Zone'),
+		'AdInPages.Title' => array('title'=> 'Location'),
 	);
 	private static $summary_fields = array(
 		'showActive' => 'Active',
@@ -70,6 +74,7 @@ class UniadsObject extends DataObject {
 		'Zone.Title' => 'Zone',
 		'Impressions' => 'Impressions',
 		'Clicks' => 'Clicks',
+		'showStatus' => 'Status',
 		'showAdInPages' => 'Location',
 		'Weight' => 'Weight',
 	);
@@ -371,5 +376,36 @@ class UniadsObject extends DataObject {
 			$ret[$page->ID] = $page->Title;
 		}
 		return implode(", ", $ret);
+	}
+
+	public function showStatus()
+	{
+		$status = '';
+		$colour = 'cadetblue';
+
+		$expires = $this->dbObject('Expires');
+		$starts = $this->dbObject('Starts');
+
+		if ($starts->InPast() && !$expires->exists()) {
+			$status = 'Expires Never';
+		}
+
+		if ($starts->exists() && $starts->InFuture()) {
+			$status = 'Starts ' . $starts->Ago();
+			$colour = 'IndianRed';
+		}
+
+		if ($expires->exists() && $expires->InPast()) {
+		    $status = 'Expired';
+			$colour = 'IndianRed';
+		}
+
+		if ($expires->exists() && $expires->InFuture()) {
+			$status = 'Expires ' . $expires->Ago();
+			$colour = 'Green';
+		}
+
+		$statusString = "<span style='color:$colour'>$status</span>";
+		return literalField::create('status', $statusString);
 	}
 }

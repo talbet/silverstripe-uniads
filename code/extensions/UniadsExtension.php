@@ -143,32 +143,36 @@ class UniadsExtension extends DataExtension {
             )
         );
 
-        // Fall back on global ads if there is nothing in the hierarchy
-        if (!$UniadsObject->exists()) {
-            $UniadsObject = UniadsObject::get()->filter(
-                array(
-                    'ZoneID' => $zone->ID,
-                    'Active' => 1,
-                )
-            );
-            // Remove all ads that are assigned to a page exclusively
-            $UniadsObject = $UniadsObject->subtract(UniadsObject::get()->filter('AdInPages.ID:GreaterThan', 0));
-        }
-
 		$UniadsObject = $UniadsObject->leftJoin('UniadsCampaign', 'c.ID = UniadsObject.CampaignID', 'c');
 
 		//current ads and campaigns
 		$campaignFilter = "(c.ID is null or (
 						c.Active = '1'
-						and (c.Starts <= '" . date('Y-m-d') . "' or c.Starts = '' or c.Starts is null)
-						and (c.Expires >= '" . date('Y-m-d') . "' or c.Expires = '' or c.Expires is null)
+						and (c.Starts <= '" . SS_Datetime::now()->getValue() . "' or c.Starts = '' or c.Starts is null)
+						and (c.Expires >= '" . SS_Datetime::now()->getValue() . "' or c.Expires = '' or c.Expires is null)
 					))
-					and (UniadsObject.Starts <= '" . date('Y-m-d') . "' or UniadsObject.Starts = '' or UniadsObject.Starts is null)
-					and (UniadsObject.Expires >= '" . date('Y-m-d') . "' or UniadsObject.Expires = '' or UniadsObject.Expires is null)
+					and (UniadsObject.Starts <= '" . SS_Datetime::now()->getValue() . "' or UniadsObject.Starts = '' or UniadsObject.Starts is null)
+					and (UniadsObject.Expires >= '" . SS_Datetime::now()->getValue() . "' or UniadsObject.Expires = '' or UniadsObject.Expires is null)
 				";
 
 		$UniadsObject = $UniadsObject->where($campaignFilter);
 		$sql = $UniadsObject->sql();
+
+		// Fall back on global ads if there is nothing in the hierarchy
+		if (!$UniadsObject->exists()) {
+			$UniadsObject = UniadsObject::get()->filter(
+				array(
+					'ZoneID' => $zone->ID,
+					'Active' => 1,
+				)
+			);
+			// Remove all ads that are assigned to a page exclusively
+			$UniadsObject = $UniadsObject->subtract(UniadsObject::get()->filter('AdInPages.ID:GreaterThan', 0));
+
+			// Filter out embargoed and expired ads
+			$UniadsObject = $UniadsObject->where($campaignFilter);
+		}
+
 		return $UniadsObject;
 	}
 
