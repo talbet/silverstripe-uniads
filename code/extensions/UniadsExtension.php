@@ -170,6 +170,7 @@ class UniadsExtension extends DataExtension {
 			$UniadsObject = $UniadsObject->subtract(UniadsObject::get()->filter('AdInPages.ID:GreaterThan', 0));
 
 			// Filter out embargoed and expired ads
+			$UniadsObject = $UniadsObject->leftJoin('UniadsCampaign', 'c.ID = UniadsObject.CampaignID', 'c');
 			$UniadsObject = $UniadsObject->where($campaignFilter);
 		}
 
